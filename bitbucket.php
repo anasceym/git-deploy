@@ -9,6 +9,7 @@ if( ! isset( $_POST['payload'] ) )
 define( 'ACTIVE_DEPLOY_ENDPOINT', true );
 
 require_once 'deploy-config.php';
+
 /**
  * Deploys BitBucket git repos
  */
@@ -16,19 +17,32 @@ class BitBucket_Deploy extends Deploy {
 	/**
 	 * Decodes and validates the data from bitbucket and calls the 
 	 * deploy constructor to deploy the new code.
-	 *
-	 * @param 	string 	$payload 	The JSON encoded payload data.
 	 */
-	function __construct( $payload ) {
-		$payload = json_decode( stripslashes( $_POST['payload'] ), true );
-		$name = $payload['repository']['name'];
-		$this->log( $payload['commits'][0]['branch'] );
-		if ( isset( parent::$repos[ $name ] ) && parent::$repos[ $name ]['branch'] === $payload['commits'][0]['branch'] ) {
-			$data = parent::$repos[ $name ];
-			$data['commit'] = $payload['commits'][0]['node'];
-			parent::__construct( $name, $data );
-		}
+	function __construct( $name, $repo ) {
+		parent::__construct( $name, $repo );
 	}
 }
 // Start the deploy attempt.
-new BitBucket_Deploy( $_POST['payload'] );
+$payload = json_decode( stripslashes( $_POST['payload'] ), true );
+
+$reposBitbucket = null;
+
+foreach ( $repos as $name => $repo )
+	$reposBitbucket = Deploy::register_repo( $name, $repo );
+
+foreach ($reposBitbucket as $nickname => $repo) {
+	$shouldPull = false;
+	$currcommit = null;
+	foreach($payload['commits'] as $commit) {
+		$shouldPull = $repo['repo_name'] == $payload['repository']['name'] && $repo['branch'] == $commit['branch'];
+		if($shouldPull) {
+			$currcommit = $commit;
+			break;
+		}
+	}
+	if($shouldPull) {
+		$data = $repo;
+		$data['commit'] = $currcommit['node'];
+		new BitBucket_Deploy( $nickname, $data );
+	}
+}

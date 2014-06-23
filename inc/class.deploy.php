@@ -27,7 +27,7 @@ abstract class Deploy {
 	/**
 	 * Registered deploy repos
 	 */
-	protected static $repos = array();
+	public static $repos = array();
 
 	/**
 	 * The name of the file that will be used for logging deployments. Set 
@@ -60,7 +60,7 @@ abstract class Deploy {
 		if ( ! is_array( $repo ) )
 			return false;
 		
-		$required_keys = array( 'path', 'branch' );
+		$required_keys = array( 'path', 'branch', 'repo_name' );
 		foreach ( $required_keys as $key ) {
 			if ( ! array_key_exists( $key, $repo ) )
 				return false;
@@ -74,6 +74,8 @@ abstract class Deploy {
 		$repo = array_merge( $defaults, $repo );
 
 		self::$repos[ $name ] = $repo;
+
+		return self::$repos;
 	}
 
 	/**
@@ -92,9 +94,14 @@ abstract class Deploy {
 	private $_deploy_ready;
 
 	/**
-	 * The name of the repo we are attempting deployment for.
+	 * The nickname of the destination we are attempting deployment to.
 	 */
 	private $_name;
+
+	/**
+	 * The name of the repo we are attempting deployment for.
+	 */
+	private $_repo_name;
 
 	/**
 	 * The name of the branch to pull from.
@@ -132,7 +139,7 @@ abstract class Deploy {
 
 		$this->_name = $name;
 
-		$available_options = array( 'branch', 'remote', 'commit', 'post_deploy' );
+		$available_options = array( 'repo_name', 'branch', 'remote', 'commit', 'post_deploy' );
 
 		foreach ( $repo as $option => $value ){
 			if ( in_array( $option, $available_options ) ){
@@ -173,14 +180,21 @@ abstract class Deploy {
 	*/
 	private function execute() {
 		try {
+
+			// $this->log(print_r($this, true));
+
 			// Make sure we're in the right directory
 			chdir( $this->_path);
 
 			// Discard any changes to tracked files since our last deploy
 			exec( 'git reset --hard HEAD', $output );
+			$this->log('git reset --hard HEAD');
+			$this->log(json_encode($output));
 
 			// Update the local repository
 			exec( 'git pull ' . $this->_remote . ' ' . $this->_branch, $output );
+			$this->log('git pull ' . $this->_remote . ' ' . $this->_branch);
+			$this->log(json_encode($output));
 
 			// Secure the .git directory
 			echo exec( 'chmod -R og-rx .git' );
@@ -188,8 +202,8 @@ abstract class Deploy {
 			if ( is_callable( $this->_post_deploy ) )
 				call_user_func( $this->_post_deploy );
 
-			$this->log( '[SHA: ' . $this->_commit . '] Deployment of ' . $this->_name . ' from branch ' . $this->_branch . ' successful' );
-			echo( '[SHA: ' . $this->_commit . '] Deployment of ' . $this->_name . ' from branch ' . $this->_branch . ' successful' );
+			$this->log( '[SHA: ' . $this->_commit . '] Deployment of ' . $this->_repo_name . ' from branch ' . $this->_branch . ' successful' );
+			echo( '[SHA: ' . $this->_commit . '] Deployment of ' . $this->_repo_name . ' from branch ' . $this->_branch . ' successful' );
 		} catch ( Exception $e ) {
 			$this->log( $e, 'ERROR' );
 		}

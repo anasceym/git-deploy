@@ -3,7 +3,8 @@
  * The repos that we want to deploy.
  *
  * Each repos will be an entry in the array in the following way:
- * 'repo name' => array( // Required. This is the repo name
+ * 'repo nickname' => array( // Required. This is the repo nickname
+ * 		'repo_name' => 'Real Repo Name',
  * 		'path' 	 => '/path/to/local/repo/' // Required. The local path to your code.
  * 		'branch' => 'the_desired_deploy_branch', // Required. Deployment branch.
  *		'remote' => 'git_remote_repo', // Optional. Defaults to 'origin'
@@ -27,11 +28,20 @@
  * other configuration you may need to do for the newly deployed code.
  */
 $repos = array(
-	/*'examplerepo' => array(
-		'branch' => 'master',
+	'Example Repo Nickname' => array(
+		'repo_name' => 'Real Repo Name',
+		'branch' => 'staging',
 		'remote' => 'origin',
-		'path' => '/path/to/local/code/'
-	)*/
+		'path' => '/path/to/local/repo/staging',
+		//'post_deploy' => 'callback',
+	),
+	'Different Repo Nickname' => array(
+		'repo_name' => 'Real Repo Name',
+		'branch' => 'production',
+		'remote' => 'origin',
+		'path' => '/path/to/local/repo',
+		//'post_deploy' => 'callback',
+	),
 );
 
 /**
